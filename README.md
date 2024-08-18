@@ -7,6 +7,8 @@ A sensor is a publisher node, which publishes to 2 topics:
 1. registration_status_topic: the data transmited consists of 1. integer (called "num", which corresponds to sensor_id, and 2. boolean value (called "data", which corresponds to whether the sensor is active or not)
 2. health_data_topic: the data transmitted consists of 1. integer (called "num", which corresponds to sensor_id, and 2. string (called "data", which corresponds to the measured data in a sensor).
 
+The node will only publish to health_data_topic, when the sensor active is, that is the boolean value "data" of registration_status_topic is true. 
+
 A receiving hub is a subscriber node, which subscribes to the 2 topics.
 It then saves each topic to an array called "array_registration_status_" "array_health_data_" and respectively. Each array contains data from all the sensors. Data corresponding to a unique sensor can be accessed using their unique sensor_id, with the help of associative map. 
 
