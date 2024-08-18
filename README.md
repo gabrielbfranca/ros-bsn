@@ -24,14 +24,17 @@ colcon build --packages-select format_data
 
 Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following command:
 source install/setup.bash
+
 colcon build --packages-select system
 
 Step 2: Run the hub node 
 Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following command:
 source install/setup.bash
+
 ros2 run system hub
 
 Step 3: Run the sensor node 
 Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following command:
 source install/setup.bash
+
 ros2 run system sensor
