@@ -1,11 +1,12 @@
-## Background
-This is a ROS2 System based on Humble Version. It is designed to run on Linux. 
+# Body Sensor Network in ROS2
+
+This is the implementation of a Body Sensor Network (BSN) in ROS2. It is designed to run on Linux and based on the ROS2 Humble Hawksbill distribution.
 It aims to simulate the transmission of data from several sensors to a receiving hub in a medical setting.
 
 ## Implementation 
 A sensor is a publisher node, which publishes to 2 topics:
-1. registration_status_topic: the data transmited consists of 1. integer (called "num", which corresponds to sensor_id, and 2. boolean value (called "data", which corresponds to whether the sensor is active or not)
-2. health_data_topic: the data transmitted consists of 1. integer (called "num", which corresponds to sensor_id, and 2. string (called "data", which corresponds to the measured data in a sensor).
+1. **registration_status_topic**: the data transmited consists of 1. integer (called "num", which corresponds to sensor_id, and 2. boolean value (called "data", which corresponds to whether the sensor is active or not)
+2. **health_data_topi**c: the data transmitted consists of 1. integer (called "num", which corresponds to sensor_id, and 2. string (called "data", which corresponds to the measured data in a sensor).
 
 The node will only publish to health_data_topic, when the sensor active is, that is the boolean value "data" of registration_status_topic is true. 
 
