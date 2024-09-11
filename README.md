@@ -18,35 +18,38 @@ The sensor is written in file "sensor.cpp", while the hub is written in file "hu
 The format of the data transmitted for the 2 topics is written in a separate package "format_data".  The format of the data for the registration_status_topic is in "Registration.msg" file, while the format of the data for the health_data_topic is in "Data.msg" file.
 
 ## Execution
-# Step 1: Build the respective packages
+### Step 1: Build the respective packages
 In the root of your workspace (eg ~/ros2_ws), run the following command:
 
 ```
 colcon build --packages-select format_data
 ```
 
-Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following command:
+Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following commands:
 
 ```
 source install/setup.bash
-
+```
+```
 colcon build --packages-select system
 ```
 
-# Step 2: Run the hub node 
-Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following command:
+### Step 2: Run the hub node 
+Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following commands:
 
 ```
 source install/setup.bash
-
+```
+```
 ros2 run system hub
 ```
 
-# Step 3: Run the sensor node 
-Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following command:
+### Step 3: Run the sensor node 
+Open a new terminal (also at the root of your workspace (eg ~/ros2_ws)), run the following commands:
 
 ```
 source install/setup.bash
-
+```
+```
 ros2 run system sensor
 ```
