@@ -8,34 +8,31 @@
 class Sensor : public rclcpp::Node
 {
 public:
-  Sensor(int32_t sensor_id, bool status, const std::string &filename)
-  : Node("sensor_node_" + std::to_string(sensor_id)), line_index_(0), status_(status), sensor_id_(sensor_id)
+  Sensor(int32_t sensor_id, bool status, const std::string &filename, const rclcpp::NodeOptions &options)
+      : Node("sensor_node_" + std::to_string(sensor_id), options), line_index_(0), status_(status), sensor_id_(sensor_id)
   {
     // Create publishers for 2 topics. 1. registration_status_topic; 2. health_data_topic
-        registration_status_publisher_ = this->create_publisher<format_data::msg::Registration>("registration_status_topic", 10);
-        health_data_publisher_ = this->create_publisher<format_data::msg::Data>("health_data_topic", 10);
-
+    registration_status_publisher_ = this->create_publisher<format_data::msg::Registration>("registration_status_topic", 10);
+    health_data_publisher_ = this->create_publisher<format_data::msg::Data>("health_data_topic", 10);
 
     // Read the file contents
     read_file(filename, lines_);
-    
+
     // Publish the registration_status_topic (sensor ID and status)
     status_timer_ = this->create_wall_timer(
-      std::chrono::seconds(1),
-      std::bind(&Sensor::publish_registration_status, this)
-    );
+        std::chrono::seconds(1),
+        std::bind(&Sensor::publish_registration_status, this));
 
     // Publish the health_data_topic only if status is true
     if (status_)
     {
       timer_ = this->create_wall_timer(
-        std::chrono::seconds(1),
-        std::bind(&Sensor::publish_health_data, this)
-      );
+          std::chrono::seconds(1),
+          std::bind(&Sensor::publish_health_data, this));
     }
   }
 
-//function to read data from a file for publishing in health_data_topic 
+  // function to read data from a file for publishing in health_data_topic
 private:
   void read_file(const std::string &filename, std::vector<std::string> &lines)
   {
@@ -49,7 +46,8 @@ private:
     std::string line;
     while (std::getline(file, line))
     {
-      if (!line.empty()) {
+      if (!line.empty())
+      {
         lines.push_back(line);
       }
     }
@@ -57,10 +55,10 @@ private:
     file.close();
   }
 
-//function to publish health_data_topic 
+  // function to publish health_data_topic
   void publish_health_data()
   {
-    if (status_)  // Check if the status is true before publishing
+    if (status_) // Check if the status is true before publishing
     {
       if (line_index_ < lines_.size())
       {
@@ -81,7 +79,7 @@ private:
     }
   }
 
-//function to publish registration_status_topic 
+  // function to publish registration_status_topic
   void publish_registration_status()
   {
     auto message = format_data::msg::Registration();
@@ -105,19 +103,21 @@ int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
 
-
-
-//initialize 2 publisher nodes
-  std::string file_path_1 = "/home/windsurff/ros0_ws/src/system/src/number.txt";
+  // initialize 2 publisher nodes
+  // std::string file_path_1 = "/home/windsurff/ros0_ws/src/system/src/number.txt";
+  std::string file_path_1 = "/root/ros2_ws/system/src/number.txt";
   bool status_1 = true;
+  auto options_1 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_1"});
   int32_t sensor_id_1 = 1;
-  auto node_1 = std::make_shared<Sensor>(sensor_id_1, status_1,file_path_1 );
-  
-  std::string file_path_2 = "/home/windsurff/ros0_ws/src/system/src/numberstring.txt";
+  auto node_1 = std::make_shared<Sensor>(sensor_id_1, status_1, file_path_1, options_1);
+
+  // std::string file_path_2 = "/home/windsurff/ros0_ws/src/system/src/numberstring.txt";
+  std::string file_path_2 = "/root/ros2_ws/system/src/numberstring.txt";
   bool status_2 = true;
+  auto options_2 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_2"});
   int32_t sensor_id_2 = 2;
-  auto node_2 = std::make_shared<Sensor>(sensor_id_2, status_2,file_path_2 );
-  
+  auto node_2 = std::make_shared<Sensor>(sensor_id_2, status_2, file_path_2, options_2);
+
   // Create an executor to manage both nodes
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(node_1);
@@ -129,4 +129,3 @@ int main(int argc, char *argv[])
   rclcpp::shutdown();
   return 0;
 }
-
