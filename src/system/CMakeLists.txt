@@ -41,3 +41,16 @@ install(TARGETS
 
 # Add this line if you are using ROS 2 launch
 ament_package()
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  find_package(ament_lint_auto REQUIRED)
+
+  # Register the tests
+  ament_add_pytest_test(test_integration
+    test/test_integration.py
+    TIMEOUT 60
+  )
+
+  ament_lint_auto_find_test_dependencies()
+endif()
