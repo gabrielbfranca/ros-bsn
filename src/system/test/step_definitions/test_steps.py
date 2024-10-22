@@ -1,58 +1,97 @@
 import pytest
+from pytest_bdd import given, when, then, scenarios
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from pytest_bdd import given, when, then
 
-@pytest.fixture
-def ros_setup():
-    rclpy.init()
-    node = Node("test_node")
-    yield node
-    rclpy.shutdown()
+# Load the scenarios from the feature file
+scenarios('../features/hub_node_integration.feature')
 
-@given('the ROS 2 system is running with hub_node and sensors', scope='function')
-def start_ros_system(ros_setup):
-    # You can use a launch file here to launch the nodes
-    pass
+# Track node statuses
+node_status = {
+    'hub_node': False,
+    'sensor_1': False,
+    'sensor_2': False
+}
 
-@when('sensor_1 and sensor_2 publish to /health_data_topic and /registration_status_topic', scope='function')
-def sensors_publish(ros_setup):
-    # Simulate sensor_1 publishing to /health_data_topic
-    health_pub = ros_setup.create_publisher(String, '/health_data_topic', 10)
-    reg_pub = ros_setup.create_publisher(String, '/registration_status_topic', 10)
+# Store the messages received by the hub node
+received_messages = []
 
-    # Create sample messages
-    health_msg = String()
-    health_msg.data = "Sensor 1 Health Data"
+
+@given("the /hub_node node is online")
+def hub_node_online():
+    node_status['hub_node'] = True
+
+
+@given('the /sensor_1 node is online')
+def sensor_1_online():
+    node_status['sensor_1'] = True
+
+
+@given('the /sensor_2 node is online')
+def sensor_2_online():
+    node_status['sensor_2'] = True
+
+
+@when('I check if node /sensor_1 publishes to /health_data_topic,/registration_status_topic')
+def check_sensor_1_publication():
+    assert node_status['sensor_1'], "/sensor_1 is not online!"
     
-    reg_msg = String()
-    reg_msg.data = "Sensor 2 Registration Status"
+    node = rclpy.create_node('test_sensor_1')
+    publisher_health_data = node.create_publisher(String, '/health_data_topic', 10)
+    publisher_registration_status = node.create_publisher(String, '/registration_status_topic', 10)
+
+    msg_health = String()
+    msg_health.data = 'Health data from sensor_1'
+    publisher_health_data.publish(msg_health)
+
+    msg_registration = String()
+    msg_registration.data = 'Registration status from sensor_1'
+    publisher_registration_status.publish(msg_registration)
+
+    rclpy.spin_once(node, timeout_sec=1.0)
+    node.destroy_node()
+
+
+@when('I check if node /sensor_2 publishes to /health_data_topic,/registration_status_topic')
+def check_sensor_2_publication():
+    assert node_status['sensor_2'], "/sensor_2 is not online!"
     
-    # Publish messages
-    health_pub.publish(health_msg)
-    reg_pub.publish(reg_msg)
+    node = rclpy.create_node('test_sensor_2')
+    publisher_health_data = node.create_publisher(String, '/health_data_topic', 10)
+    publisher_registration_status = node.create_publisher(String, '/registration_status_topic', 10)
 
-@then('hub_node should receive the messages on /health_data_topic and /registration_status_topic', scope='function')
-def hub_node_receives_messages(ros_setup):
-    # Subscribe to /health_data_topic and /registration_status_topic to simulate hub_node's behavior
-    received_health_data = None
-    received_registration_status = None
+    msg_health = String()
+    msg_health.data = 'Health data from sensor_2'
+    publisher_health_data.publish(msg_health)
 
-    def health_callback(msg):
-        nonlocal received_health_data
-        received_health_data = msg.data
+    msg_registration = String()
+    msg_registration.data = 'Registration status from sensor_2'
+    publisher_registration_status.publish(msg_registration)
 
-    def reg_callback(msg):
-        nonlocal received_registration_status
-        received_registration_status = msg.data
+    rclpy.spin_once(node, timeout_sec=1.0)
+    node.destroy_node()
 
-    ros_setup.create_subscription(String, '/health_data_topic', health_callback, 10)
-    ros_setup.create_subscription(String, '/registration_status_topic', reg_callback, 10)
+
+@then('/hub_node should have /health_data_topic,/registration_status_topic subscribed')
+def check_hub_node_subscriptions():
+    assert node_status['hub_node'], "/hub_node is not online!"
     
-    # Spin ROS once to ensure messages are received
+    node = rclpy.create_node('test_hub_node')
+    
+    def health_data_callback(msg):
+        received_messages.append(msg.data)
+
+    def registration_status_callback(msg):
+        received_messages.append(msg.data)
+
+    node.create_subscription(String, '/health_data_topic', health_data_callback, 10)
+    node.create_subscription(String, '/registration_status_topic', registration_status_callback, 10)
+
     for _ in range(5):
-        rclpy.spin_once(ros_setup)
-    
-    assert received_health_data == "Sensor 1 Health Data", "hub_node did not receive health data"
-    assert received_registration_status == "Sensor 2 Registration Status", "hub_node did not receive registration status"
+        rclpy.spin_once(node, timeout_sec=1.0)
+
+    assert len(received_messages) >= 4, "Hub node did not receive all messages."
+    node.destroy_node()
+
+    rclpy.shutdown()
