@@ -8,7 +8,7 @@
 class Sensor : public rclcpp::Node
 {
 public:
-  Sensor(int32_t sensor_id, bool status, const std::string &filename, const rclcpp::NodeOptions &options)
+  Sensor(int32_t sensor_id, bool status, const std::string &filename, const rclcpp::NodeOptions &options, std::string name)
       : Node("sensor_node_" + std::to_string(sensor_id), options), line_index_(0), status_(status), sensor_id_(sensor_id)
   {
     // Create publishers for 2 topics. 1. registration_status_topic; 2. health_data_topic
@@ -30,6 +30,19 @@ public:
           std::chrono::seconds(1),
           std::bind(&Sensor::publish_health_data, this));
     }
+
+    highRisk0 = name + "_HighRisk0";
+    highRisk1 = name + "_HighRisk1";
+    midRisk0 = name + "_MidRisk0";
+    midRisk1 = name + "_MidRisk1";
+    lowRisk = name + "_LowRisk";
+
+    declare_parameter(highRisk0.c_str(), std::vector<double>{0});
+    declare_parameter(highRisk1.c_str(), std::vector<double>{0});
+    declare_parameter(midRisk0.c_str(), std::vector<double>{0});
+    declare_parameter(midRisk1.c_str(), std::vector<double>{0});
+    declare_parameter(lowRisk.c_str(), std::vector<double>{0});
+
   }
 
   // function to read data from a file for publishing in health_data_topic
@@ -97,6 +110,7 @@ private:
   rclcpp::Publisher<format_data::msg::Registration>::SharedPtr registration_status_publisher_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr status_timer_;
+  std::string highRisk0, highRisk1, midRisk0, midRisk1, lowRisk;
 };
 
 int main(int argc, char *argv[])
@@ -105,18 +119,18 @@ int main(int argc, char *argv[])
 
   // initialize 2 publisher nodes
   // std::string file_path_1 = "/home/windsurff/ros0_ws/src/system/src/number.txt";
-  std::string file_path_1 = "/root/ros2_ws/system/src/number.txt";
+  std::string file_path_1 = "/home/ws/src/system/src/number.txt";
   bool status_1 = true;
   auto options_1 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_1"});
   int32_t sensor_id_1 = 1;
-  auto node_1 = std::make_shared<Sensor>(sensor_id_1, status_1, file_path_1, options_1);
+  auto node_1 = std::make_shared<Sensor>(sensor_id_1, status_1, file_path_1, options_1, "trm");
 
   // std::string file_path_2 = "/home/windsurff/ros0_ws/src/system/src/numberstring.txt";
-  std::string file_path_2 = "/root/ros2_ws/system/src/numberstring.txt";
+  std::string file_path_2 = "/home/ws/src/system/src/numberstring.txt";
   bool status_2 = true;
   auto options_2 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_2"});
   int32_t sensor_id_2 = 2;
-  auto node_2 = std::make_shared<Sensor>(sensor_id_2, status_2, file_path_2, options_2);
+  auto node_2 = std::make_shared<Sensor>(sensor_id_2, status_2, file_path_2, options_2, "hr");
 
   // Create an executor to manage both nodes
   rclcpp::executors::SingleThreadedExecutor executor;
