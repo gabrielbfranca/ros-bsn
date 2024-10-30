@@ -47,7 +47,7 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
 
   # Register the tests
-  ament_add_pytest_test(test_integration
+  ament_add_pytest_test(hub_node_integration_test
     test/test_integration.py
     TIMEOUT 60
   )

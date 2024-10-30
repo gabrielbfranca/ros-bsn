@@ -104,15 +104,15 @@ int main(int argc, char *argv[])
   rclcpp::init(argc, argv);
 
   // initialize 2 publisher nodes
-  // std::string file_path_1 = "/home/windsurff/ros0_ws/src/system/src/number.txt";
-  std::string file_path_1 = "/root/ros2_ws/system/src/number.txt";
+  //std::string file_path_1 = "/home/windsurff/ros0_ws/src/system/src/number.txt";
+  std::string file_path_1 = "/home/ws/src/system/src/number.txt";
   bool status_1 = true;
   auto options_1 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_1"});
   int32_t sensor_id_1 = 1;
   auto node_1 = std::make_shared<Sensor>(sensor_id_1, status_1, file_path_1, options_1);
 
-  // std::string file_path_2 = "/home/windsurff/ros0_ws/src/system/src/numberstring.txt";
-  std::string file_path_2 = "/root/ros2_ws/system/src/numberstring.txt";
+  //std::string file_path_2 = "/home/windsurff/ros0_ws/src/system/src/numberstring.txt";
+  std::string file_path_2 = "/home/ws/src/system/src/numberstring.txt";
   bool status_2 = true;
   auto options_2 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_2"});
   int32_t sensor_id_2 = 2;
