@@ -1,0 +1,13 @@
+float64 trm_risk
+float64 ecg_risk
+float64 oxi_risk
+float64 abps_risk
+float64 abpd_risk
+float64 glc_risk
+float64 trm_data
+float64 ecg_data
+float64 oxi_data
+float64 abps_data
+float64 abpd_data
+float64 glc_data
+float64 patient_status 
