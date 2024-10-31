@@ -29,7 +29,7 @@ private:
   // Callback for health_data_topic
   void health_data_callback(const format_data::msg::Data& msg) 
   {
-    RCLCPP_INFO(this->get_logger(), "Received message from health_data_topic: num = '%d', data = '%s'", msg.num, msg.data.c_str());
+    RCLCPP_INFO(this->get_logger(), "Received message from health_data_topic: num = '%d', data = '%.2lf'", msg.num, msg.data);
     
     // Save received message to the corresponding array based on sensor ID (msg.num)
     array_health_data_[msg.num].push_back(msg);
@@ -54,7 +54,7 @@ private:
     RCLCPP_INFO(this->get_logger(), "Contents of %s for sensor ID %d:", topic_name.c_str(), sensor_id);
     for (const auto &msg : data_array)
     {
-      RCLCPP_INFO(this->get_logger(), "  num = '%d', data = '%s'", msg.num, msg.data.c_str());
+      RCLCPP_INFO(this->get_logger(), "  num = '%d', data = '%.2lf'", msg.num, msg.data);
     }
   }
 

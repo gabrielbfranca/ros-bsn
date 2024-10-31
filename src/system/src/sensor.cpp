@@ -31,6 +31,8 @@ public:
           std::bind(&Sensor::publish_health_data, this));
     }
 
+    sensorName = name;
+
     highRisk0 = name + "_HighRisk0";
     highRisk1 = name + "_HighRisk1";
     midRisk0 = name + "_MidRisk0";
@@ -47,7 +49,7 @@ public:
 
   // function to read data from a file for publishing in health_data_topic
 private:
-  void read_file(const std::string &filename, std::vector<std::string> &lines)
+  void read_file(const std::string &filename, std::vector<double> &lines)
   {
     std::ifstream file(filename);
     if (!file.is_open())
@@ -61,7 +63,8 @@ private:
     {
       if (!line.empty())
       {
-        lines.push_back(line);
+        //RCLCPP_INFO_STREAM(this->get_logger(), "Read from file: " << line);
+        lines.push_back(std::stod(line));
       }
     }
 
@@ -102,7 +105,7 @@ private:
     registration_status_publisher_->publish(message);
   }
 
-  std::vector<std::string> lines_;
+  std::vector<double> lines_;
   size_t line_index_;
   bool status_;
   int32_t sensor_id_;
@@ -110,6 +113,7 @@ private:
   rclcpp::Publisher<format_data::msg::Registration>::SharedPtr registration_status_publisher_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr status_timer_;
+  std::string sensorName;
   std::string highRisk0, highRisk1, midRisk0, midRisk1, lowRisk;
 };
 
