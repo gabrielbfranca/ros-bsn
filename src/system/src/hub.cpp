@@ -29,12 +29,12 @@ private:
   // Callback for health_data_topic
   void health_data_callback(const format_data::msg::Data& msg) 
   {
-    RCLCPP_INFO(this->get_logger(), "Received message from health_data_topic: num = '%d', data = '%.2lf'", msg.num, msg.data);
+    RCLCPP_INFO(this->get_logger(), "Received message from health_data_topic: num = '%d', data = '%.2lf', risk = %.2lf", msg.num, msg.data, msg.risk*100);
     
     // Save received message to the corresponding array based on sensor ID (msg.num)
     array_health_data_[msg.num].push_back(msg);
     
-    print_array("health_data_topic", array_health_data_[msg.num], msg.num);
+    //print_array("health_data_topic", array_health_data_[msg.num], msg.num);
   }
 
   // Callback for registration_status
@@ -45,7 +45,7 @@ private:
     // Save received message to the corresponding array based on sensor ID (msg.num)
     array_registration_status_[msg.num].push_back(msg);
     
-    print_array("registration_status", array_registration_status_[msg.num], msg.num);
+    //print_array("registration_status", array_registration_status_[msg.num], msg.num);
   }
 
   // Function to print all entries of an array of health_data_topic for a specific sensor ID
