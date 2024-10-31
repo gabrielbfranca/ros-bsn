@@ -18,6 +18,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
   "msg/Data.msg"
   "msg/Registration.msg"
+  "msg/TargetSystemData.msg"
 
   DEPENDENCIES std_msgs # Add packages that above messages depend on, in this case std_msgs for both.msg
 )
