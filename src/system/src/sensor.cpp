@@ -92,6 +92,9 @@ private:
           RCLCPP_ERROR(this->get_logger(), "Invalid integer format in file for topic 1.");
           return;
         }
+      } else {
+        line_index_ = 0;
+        RCLCPP_INFO_STREAM(this->get_logger(), "End of file reached. Resetting to the beginning.");
       }
     }
   }
