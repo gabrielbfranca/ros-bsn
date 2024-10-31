@@ -83,7 +83,8 @@ private:
         {
           message.num = sensor_id_;
           message.data = lines_[line_index_++];
-          RCLCPP_INFO_STREAM(this->get_logger(), "Publishing to health_data_topic: " << message.num << ", " << message.data);
+          message.risk = calculateRisk(message.data);
+          RCLCPP_INFO_STREAM(this->get_logger(), "Publishing to health_data_topic: " << message.num << ", " << message.data << ", " << message.risk);
           health_data_publisher_->publish(message);
         }
         catch (const std::invalid_argument &e)
@@ -103,6 +104,65 @@ private:
     message.data = status_ ? "true" : "false";
     RCLCPP_INFO_STREAM(this->get_logger(), "Publishing registration status: " << sensor_id_ << ", " << (status_ ? "true" : "false"));
     registration_status_publisher_->publish(message);
+  }
+
+  double calculateRisk(double value) {
+    auto highRisk0Values = get_parameter(highRisk0.c_str()).as_double_array();
+    auto highRisk1Values = get_parameter(highRisk1.c_str()).as_double_array();
+    auto midRisk0Values = get_parameter(midRisk0.c_str()).as_double_array();
+    auto midRisk1Values = get_parameter(midRisk1.c_str()).as_double_array();
+    auto lowRiskValues = get_parameter(lowRisk.c_str()).as_double_array();
+
+    double risk;
+
+    if(value >= highRisk0Values[0] && value <= highRisk0Values[1]) {
+      // 66% a 100%
+      risk = calculateBorderRisk(value, highRisk0Values, false);
+      risk = risk * 0.34 + 0.66;
+    } else if(value >= highRisk1Values[0] && value <= highRisk1Values[1]) {
+      // 66% a 100%
+      risk = calculateBorderRisk(value, highRisk1Values, true);
+      risk = risk * 0.34 + 0.66;
+    } else if(value >= midRisk0Values[0] && value <= midRisk0Values[1]) {
+      // 20% a 65%
+      risk = calculateBorderRisk(value, midRisk0Values, false);
+      risk = risk * 0.45 + 0.2;
+    } else if(value >= midRisk1Values[0] && value <= midRisk1Values[1]) {
+      // 20% a 65%
+      risk = calculateBorderRisk(value, midRisk1Values, true);
+      risk = risk * 0.45 + 0.2;
+    } else if(value >= lowRiskValues[0] && value <= lowRiskValues[1]) {
+      // 0% a 20%
+      risk = calculateCentralRisk(value, lowRiskValues);
+      risk = risk * 0.2;
+    } else {
+      throw std::invalid_argument("Value not in any range");
+    }
+    return risk;
+  }
+
+  double calculateCentralRisk(double value, std::vector<double> values) {
+    double min_value = values[0];
+    double max_value = values[1];
+    double range = max_value - min_value;
+    double center = (min_value + max_value) / 2;
+    double distance = abs(center - value);
+    double risk = distance / range;
+    return risk;    
+  }
+
+  double calculateBorderRisk(double value, std::vector<double> values, bool increasing) {
+    double min_value = values[0];
+    double max_value = values[1];
+    double range = max_value - min_value;
+    
+    double risk;
+    if(increasing) {
+      risk = (value - min_value) / range;
+    } else {
+      risk = (max_value - value) / range;
+    }
+    return risk;
   }
 
   std::vector<double> lines_;
