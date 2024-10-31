@@ -1,7 +1,38 @@
+import subprocess
+def capture_csv_data(topic, message_keys, line_limit=10):
+    """
+    Capture CSV data from a ROS2 topic and organize it into a dictionary with keys based on message keys.
+    """
+    process = subprocess.Popen(
+        ['ros2', 'topic', 'echo', '--csv', topic],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+
+    # Initialize the output dictionary with empty lists for each key
+    output = {key: [] for key in message_keys.split(',')}
+    try:
+        # Read lines until reaching the line limit
+        for line in process.stdout:
+            values = line.strip().split(',')  # Split the CSV line into values
+            if len(values) == len(output):  # Ensure the line has the correct number of values
+                # Map values to their respective keys in the output dictionary
+                for key, value in zip(output.keys(), values):
+                    # Convert value to bool if 'True' or 'False', otherwise convert to int
+                    output[key].append(value)
+
+            if sum(len(v) for v in output.values()) >= line_limit:
+                process.terminate()  # Terminate the subprocess once limit is reached
+                break
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        process.wait()  # Ensure the process exits properly
+
+    return output
 
 def get_rosnode_info_ros2(lines):
-    
-
     node_info = {
         "publishers": [],
         "subscribers": [],

@@ -187,6 +187,7 @@ int main(int argc, char *argv[])
   // initialize 2 publisher nodes
   // std::string file_path_1 = "/home/windsurff/ros0_ws/src/system/src/number.txt";
   std::string file_path_1 = "/home/ws/src/system/src/temperature_data.txt";
+
   bool status_1 = true;
   auto options_1 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_1"});
   int32_t sensor_id_1 = 1;
@@ -194,6 +195,7 @@ int main(int argc, char *argv[])
 
   // std::string file_path_2 = "/home/windsurff/ros0_ws/src/system/src/numberstring.txt";
   std::string file_path_2 = "/home/ws/src/system/src/heart_rate.txt";
+
   bool status_2 = true;
   auto options_2 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_2"});
   int32_t sensor_id_2 = 2;
