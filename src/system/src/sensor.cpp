@@ -8,17 +8,27 @@
 class Sensor : public rclcpp::Node
 {
 public:
-  Sensor(int32_t sensor_id, bool status, const std::string &filename, const rclcpp::NodeOptions &options, std::string name)
-      : Node("sensor_node_" + std::to_string(sensor_id), options), line_index_(0), status_(status), sensor_id_(sensor_id)
+  Sensor(const std::string &sensor_name, bool status, const std::string &filename, const rclcpp::NodeOptions &options)
+      : Node("sensor_node_" + sensor_name, options), line_index_(0), status_(status), sensorName(sensor_name)
   {
     // Create publishers for 2 topics. 1. registration_status_topic; 2. health_data_topic
     registration_status_publisher_ = this->create_publisher<format_data::msg::Registration>("registration_status_topic", 10);
-    health_data_publisher_ = this->create_publisher<format_data::msg::Data>("health_data_topic", 10);
+    std::string health_data_topic;
+    if (sensor_name == "trm") {
+        health_data_topic = "thermometer_data";
+    } else if (sensor_name == "ecg") {
+        health_data_topic = "ecg_data";
+    } else {
+        health_data_topic = "unknown_sensor_data"; // Fallback for unrecognized sensor names
+    }
+
+    // Create the health data publisher with the determined topic
+    health_data_publisher_ = this->create_publisher<format_data::msg::Data>(health_data_topic, 10);
 
     // Read the file contents
     read_file(filename, lines_);
 
-    // Publish the registration_status_topic (sensor ID and status)
+    // Publish the registration_status_topic (sensor name and status)
     status_timer_ = this->create_wall_timer(
         std::chrono::seconds(1),
         std::bind(&Sensor::publish_registration_status, this));
@@ -31,23 +41,20 @@ public:
           std::bind(&Sensor::publish_health_data, this));
     }
 
-    sensorName = name;
-
-    highRisk0 = name + "_HighRisk0";
-    highRisk1 = name + "_HighRisk1";
-    midRisk0 = name + "_MidRisk0";
-    midRisk1 = name + "_MidRisk1";
-    lowRisk = name + "_LowRisk";
+    // Configure risk parameters based on sensor name
+    highRisk0 = sensor_name + "_HighRisk0";
+    highRisk1 = sensor_name + "_HighRisk1";
+    midRisk0 = sensor_name + "_MidRisk0";
+    midRisk1 = sensor_name + "_MidRisk1";
+    lowRisk = sensor_name + "_LowRisk";
 
     declare_parameter(highRisk0.c_str(), std::vector<double>{0});
     declare_parameter(highRisk1.c_str(), std::vector<double>{0});
     declare_parameter(midRisk0.c_str(), std::vector<double>{0});
     declare_parameter(midRisk1.c_str(), std::vector<double>{0});
     declare_parameter(lowRisk.c_str(), std::vector<double>{0});
-
   }
 
-  // function to read data from a file for publishing in health_data_topic
 private:
   void read_file(const std::string &filename, std::vector<double> &lines)
   {
@@ -70,44 +77,44 @@ private:
 
     file.close();
   }
-
-  // function to publish health_data_topic
   void publish_health_data()
   {
-    if (status_) // Check if the status is true before publishing
+    if (status_)
     {
       if (line_index_ < lines_.size())
       {
         auto message = format_data::msg::Data();
         try
         {
-          message.num = sensor_id_;
+          message.type = sensorName;  // Use sensor name instead of numeric ID
           message.data = lines_[line_index_++];
           message.risk = calculateRisk(message.data);
-          RCLCPP_INFO_STREAM(this->get_logger(), "Publishing to health_data_topic: " << message.num << ", " << message.data << ", " << message.risk);
+          RCLCPP_INFO_STREAM(this->get_logger(), "Publishing to health_data_topic: " << message.type << ", " << message.data << ", " << message.risk);
           health_data_publisher_->publish(message);
         }
         catch (const std::invalid_argument &e)
         {
-          RCLCPP_ERROR(this->get_logger(), "Invalid integer format in file for topic 1.");
+          RCLCPP_ERROR(this->get_logger(), "Invalid data format in file for health data topic %s", e.what());
           return;
         }
-      } else {
+      }
+      else
+      {
         line_index_ = 0;
         RCLCPP_INFO_STREAM(this->get_logger(), "End of file reached. Resetting to the beginning.");
       }
     }
   }
 
-  // function to publish registration_status_topic
   void publish_registration_status()
   {
     auto message = format_data::msg::Registration();
-    message.num = sensor_id_;
+    message.type = sensorName;  
     message.data = status_ ? "true" : "false";
-    RCLCPP_INFO_STREAM(this->get_logger(), "Publishing registration status: " << sensor_id_ << ", " << (status_ ? "true" : "false"));
+    RCLCPP_INFO_STREAM(this->get_logger(), "Publishing registration status: " << message.type << ", " << message.data);
     registration_status_publisher_->publish(message);
   }
+
 
   double calculateRisk(double value) {
     auto highRisk0Values = get_parameter(highRisk0.c_str()).as_double_array();
@@ -171,7 +178,6 @@ private:
   std::vector<double> lines_;
   size_t line_index_;
   bool status_;
-  int32_t sensor_id_;
   rclcpp::Publisher<format_data::msg::Data>::SharedPtr health_data_publisher_;
   rclcpp::Publisher<format_data::msg::Registration>::SharedPtr registration_status_publisher_;
   rclcpp::TimerBase::SharedPtr timer_;
@@ -188,18 +194,16 @@ int main(int argc, char *argv[])
   // std::string file_path_1 = "/home/windsurff/ros0_ws/src/system/src/number.txt";
   std::string file_path_1 = "/home/ws/src/system/src/temperature_data.txt";
 
-  bool status_1 = true;
-  auto options_1 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_1"});
-  int32_t sensor_id_1 = 1;
-  auto node_1 = std::make_shared<Sensor>(sensor_id_1, status_1, file_path_1, options_1, "trm");
+  
+  auto options_1 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=thermometer_sensor"});
+  auto node_1 = std::make_shared<Sensor>("trm", true, file_path_1, options_1);
 
   // std::string file_path_2 = "/home/windsurff/ros0_ws/src/system/src/numberstring.txt";
   std::string file_path_2 = "/home/ws/src/system/src/heart_rate.txt";
 
-  bool status_2 = true;
-  auto options_2 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=sensor_2"});
-  int32_t sensor_id_2 = 2;
-  auto node_2 = std::make_shared<Sensor>(sensor_id_2, status_2, file_path_2, options_2, "hr");
+  
+  auto options_2 = rclcpp::NodeOptions().arguments({"--ros-args", "-r", "__node:=ecg_sensor"});
+  auto node_2 = std::make_shared<Sensor>("ecg", true, file_path_2, options_2);
 
   // Create an executor to manage both nodes
   rclcpp::executors::SingleThreadedExecutor executor;
@@ -208,7 +212,6 @@ int main(int argc, char *argv[])
 
   // Spin the executor to allow both nodes to run concurrently
   executor.spin();
-
   rclcpp::shutdown();
   return 0;
 }

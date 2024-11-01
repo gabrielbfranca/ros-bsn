@@ -16,11 +16,11 @@ def generate_launch_description():
             output='screen',
             parameters=[
                 {
-                "hr_HighRisk0": [0.0, 70.0],
-                "hr_MidRisk0": [70.0, 85.0],
-                "hr_LowRisk": [85.0, 97.0],
-                "hr_MidRisk1": [97.0, 115.0],
-                "hr_HighRisk1": [115.0, 300.0],
+                "ecg_HighRisk0": [0.0, 70.0],
+                "ecg_MidRisk0": [70.0, 85.0],
+                "ecg_LowRisk": [85.0, 97.0],
+                "ecg_MidRisk1": [97.0, 115.0],
+                "ecg_HighRisk1": [115.0, 300.0],
                 
                 "trm_HighRisk0": [0.0, 31.99],
                 "trm_MidRisk0": [32.0, 35.99],

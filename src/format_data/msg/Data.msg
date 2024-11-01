@@ -1,3 +1,3 @@
-int32 num
+string type
 float64 data
 float64 risk

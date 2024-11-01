@@ -19,8 +19,8 @@ public:
   : Node("multi_topic_subscriber")
   {
     // Subscription to health_data_topic
-    subscription_health_data_ = this->create_subscription<format_data::msg::Data>(
-      "health_data_topic", 10, std::bind(&MultiTopicSubscriber::health_data_callback, this, _1));
+        subscribeToHealthData("trm_data");
+        subscribeToHealthData("ecg_data");
 
     // Subscription to registration_status_topic
     subscription_status_ = this->create_subscription<format_data::msg::Registration>(
@@ -30,7 +30,12 @@ public:
   }
 
 private:
-  std::vector<std::string> getPatientStatus() {
+  void subscribeToHealthData(const std::string &topic_name) {
+        auto subscription = this->create_subscription<format_data::msg::Data>(
+            topic_name, 10, std::bind(&MultiTopicSubscriber::health_data_callback, this, _1));
+        subscriptions_.emplace_back(std::move(subscription)); // Store the subscription
+    }
+  std::vector<std::string> getPatientStatus() { 
     std::string sensor_risk_str;
     std::string abps;
     std::string abpd;
@@ -39,32 +44,38 @@ private:
     std::string trm;
     std::string glc;
 
-    for (int i = 1; i < 3; i++) {
-      format_data::msg::Data msg = array_health_data_[i].back();
-      double sensor_risk = msg.risk;
+    // Using string keys "trm" and "ecg" to access array_health_data_
+    std::vector<std::string> sensor_keys = {"trm", "ecg"};
 
-      if (sensor_risk > 0 && sensor_risk <= 20) {
-        sensor_risk_str = "low risk";
-      } else if (sensor_risk > 20 && sensor_risk <= 65) {
-        sensor_risk_str = "moderate risk";
-      } else if (sensor_risk > 65 && sensor_risk <= 100) {
-        sensor_risk_str = "high risk";
-      } else {
-        sensor_risk_str = "unknown";
-      }
+    for (const auto &key : sensor_keys) {
+        if (!array_health_data_[key].empty()) {  // Ensure the vector is not empty
+            format_data::msg::Data msg = array_health_data_[key].back();
+            double sensor_risk = msg.risk;
 
-      if (i == 1) {
-        trm = sensor_risk_str;
-        trm_risk_ = sensor_risk;
-      } else if (i == 2) {
-        ecg = sensor_risk_str;
-        ecg_risk_ = sensor_risk;
-      }
+            if (sensor_risk > 0 && sensor_risk <= 20) {
+                sensor_risk_str = "low risk";
+            } else if (sensor_risk > 20 && sensor_risk <= 65) {
+                sensor_risk_str = "moderate risk";
+            } else if (sensor_risk > 65 && sensor_risk <= 100) {
+                sensor_risk_str = "high risk";
+            } else {
+                sensor_risk_str = "unknown";
+            }
+
+            if (key == "trm") {
+                trm = sensor_risk_str;
+                trm_risk_ = sensor_risk;
+            } else if (key == "ecg") {
+                ecg = sensor_risk_str;
+                ecg_risk_ = sensor_risk;
+            }
+        }
     }
 
     std::vector<std::string> v = {trm, ecg, oxi, abps, abpd, glc};
     return v;
-  }
+}
+
 
   // BSN's process
   void process(){
@@ -213,19 +224,19 @@ private:
   // Callback for health_data_topic
   void health_data_callback(const format_data::msg::Data& msg) 
   {
-    RCLCPP_INFO(this->get_logger(), "Received message from health_data_topic: num = '%d', data = '%.2lf', risk = %.2lf", msg.num, msg.data, msg.risk*100);
+    RCLCPP_INFO(this->get_logger(), "Received message from health_data_topic: type = '%s', data = '%.2lf', risk = %.2lf", msg.type.c_str(), msg.data, msg.risk*100);
     
     // Save received message to the corresponding array based on sensor ID (msg.num)
-    array_health_data_[msg.num].push_back(msg);
+    array_health_data_[msg.type].push_back(msg);
     
     //print_array("health_data_topic", array_health_data_[msg.num], msg.num);
 
-    if (msg.num == 1) {
+    if (msg.type == "trm") {
       trm_raw_ = msg.data;
-    } else if (msg.num == 2) {
+    } else if (msg.type == "ecg") {
       ecg_raw_ = msg.data;
     }
-    if (array_health_data_[1].size() > 2 && array_health_data_[2].size() > 2) {
+    if (array_health_data_["trm"].size() > 2 && array_health_data_["ecg"].size() > 2) {
       process();
      }
   }
@@ -233,15 +244,16 @@ private:
   // Callback for registration_status
   void registration_status_callback(const format_data::msg::Registration & msg) 
   {
-    RCLCPP_INFO(this->get_logger(), "Received message from registration_status: sensor_id = '%d', status = '%s'", msg.num, msg.data ? "true" : "false");
+    RCLCPP_INFO(this->get_logger(), "Received message from registration_status: sensor_type = '%s', status = '%s'", msg.type.c_str(), msg.data ? "true" : "false");
     
     // Save received message to the corresponding array based on sensor ID (msg.num)
-    array_registration_status_[msg.num].push_back(msg);
+    array_registration_status_[msg.type].push_back(msg);
     
     //print_array("registration_status", array_registration_status_[msg.num], msg.num);
   }
 
   // Function to print all entries of an array of health_data_topic for a specific sensor ID
+  /*
   void print_array(const std::string &topic_name, const std::vector<format_data::msg::Data> &data_array, int32_t sensor_id) const
   {
     RCLCPP_INFO(this->get_logger(), "Contents of %s for sensor ID %d:", topic_name.c_str(), sensor_id);
@@ -260,10 +272,11 @@ private:
       RCLCPP_INFO(this->get_logger(), "  num = '%d', status = '%s'", msg.num, msg.data ? "true" : "false");
     }
   }
-
+  */
   // Maps to store received messages by sensor ID
-  std::unordered_map<int32_t, std::vector<format_data::msg::Data>> array_health_data_;
-  std::unordered_map<int32_t, std::vector<format_data::msg::Registration>> array_registration_status_;
+  std::vector<std::shared_ptr<rclcpp::Subscription<format_data::msg::Data>>> subscriptions_; // Declare subscriptions
+  std::unordered_map<std::string, std::vector<format_data::msg::Data>> array_health_data_;
+  std::unordered_map<std::string, std::vector<format_data::msg::Registration>> array_registration_status_;
 
   // Publisher for CentralHub
   rclcpp::Publisher<format_data::msg::TargetSystemData>::SharedPtr publisher_;

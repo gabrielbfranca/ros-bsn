@@ -1,3 +1,3 @@
-int32 num
+string type
 bool data
 
