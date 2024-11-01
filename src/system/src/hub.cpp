@@ -19,7 +19,7 @@ public:
   : Node("multi_topic_subscriber")
   {
     // Subscription to health_data_topic
-        subscribeToHealthData("trm_data");
+        subscribeToHealthData("thermometer_data");
         subscribeToHealthData("ecg_data");
 
     // Subscription to registration_status_topic
@@ -228,7 +228,8 @@ private:
     
     // Save received message to the corresponding array based on sensor ID (msg.num)
     array_health_data_[msg.type].push_back(msg);
-    
+    RCLCPP_INFO(this->get_logger(), "Current size of array_health_data['trm']: %zu", array_health_data_["trm"].size());
+    RCLCPP_INFO(this->get_logger(), "Current size of array_health_data['ecg']: %zu", array_health_data_["ecg"].size());
     //print_array("health_data_topic", array_health_data_[msg.num], msg.num);
 
     if (msg.type == "trm") {

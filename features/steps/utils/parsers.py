@@ -1,8 +1,54 @@
 import subprocess
-def capture_csv_data(topic, message_keys, line_limit=10):
+import importlib
+
+def format_entity(raw_string):
+    # Check if any words in the string start with an uppercase letter
+    words = raw_string.split()
+    if any(word[0].isupper() for word in words):
+        # If there are uppercase letters, format in camel case
+        formatted_string = ''.join(word.capitalize() for word in words)
+    else:
+        # Otherwise, format in snake case
+        formatted_string = '_'.join(word.lower() for word in words)
+    
+    # Add a forward slash at the beginning
+    return f'/{formatted_string}'
+
+def get_message_attributes(topic_name):
+    """Dynamically get the attributes of a ROS2 message type."""
+    # Convert 'format_data/msg/Data' to 'format_data.msg.Data'
+    result = subprocess.run(['ros2', 'topic', 'type', topic_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+    if result.returncode != 0:
+        raise Exception(f"Error getting node info: {result.stderr.decode('utf-8')}")
+    
+    message_type = result.stdout.decode('utf-8').strip()
+    
+    module_name = message_type.replace('/', '.')
+    class_name = module_name.split('.')[-1]  # Extract the last part as the class name
+    module_name = '.'.join(module_name.split('.')[:-1])  # Get the module part
+
+    # Import the module and get the message class
+    module = importlib.import_module(module_name)
+    message_class = getattr(module, class_name)
+
+    # Retrieve attributes
+    if hasattr(message_class, '__slots__'):
+        return message_class.__slots__
+    elif hasattr(message_class, '__dataclass_fields__'):
+        return message_class.__dataclass_fields__.keys()
+    else:
+        return []
+
+def capture_csv_data(topic, line_limit=10):
     """
     Capture CSV data from a ROS2 topic and organize it into a dictionary with keys based on message keys.
     """
+    # Step 1: Get the message attributes for dynamic keys
+    message_keys = get_message_attributes(topic)
+    output = {key[1:]: [] for key in message_keys}
+    
+
+    # Step 2: Start the subprocess to capture CSV data
     process = subprocess.Popen(
         ['ros2', 'topic', 'echo', '--csv', topic],
         stdout=subprocess.PIPE,
@@ -10,24 +56,28 @@ def capture_csv_data(topic, message_keys, line_limit=10):
         text=True
     )
 
-    # Initialize the output dictionary with empty lists for each key
-    output = {key: [] for key in message_keys.split(',')}
     try:
         # Read lines until reaching the line limit
-        for line in process.stdout:
+        while True:
+            line = process.stdout.readline()  # Read one line at a time
+            if not line:  # Break if no more lines to read
+                break
+
             values = line.strip().split(',')  # Split the CSV line into values
+            
             if len(values) == len(output):  # Ensure the line has the correct number of values
                 # Map values to their respective keys in the output dictionary
                 for key, value in zip(output.keys(), values):
-                    # Convert value to bool if 'True' or 'False', otherwise convert to int
                     output[key].append(value)
 
-            if sum(len(v) for v in output.values()) >= line_limit:
-                process.terminate()  # Terminate the subprocess once limit is reached
+            # Break if all lists have at least `line_limit` items
+            if all(len(v) >= line_limit for v in output.values()):
                 break
+            
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
+        process.terminate()  # Ensure the process exits properly
         process.wait()  # Ensure the process exits properly
 
     return output
