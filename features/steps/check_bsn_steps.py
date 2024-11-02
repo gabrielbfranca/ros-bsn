@@ -44,7 +44,7 @@ def step_then_check_high_risk(context):
             continue 
         assert 'risk' in data and data['risk'], f"No risk data detected in topic {topic}."
 
-@then('{topic_name} will receive the risks from sensors')
+@then("{topic_name} will receive the risks from sensors and detect patient's status")
 def step_then_check_target_system_receives_risk(context,topic_name):
     #print(f'TargetSystemData is receiving the risk data from sensors: {context.target_system_data}')
     risk_key_mapping = {
@@ -63,6 +63,7 @@ def step_then_check_target_system_receives_risk(context,topic_name):
         print(f"Target risks: {sensor_data[key]['risk']} Sensor risks: {target_data[value]}")
         elements = count_matching_elements(sensor_data[key]['risk'], target_data[value])
         assert elements > 0, f"Topics {key} and {value} do not have matching risk data."
+        assert len(target_data['patient_status']) >= elements, f'patient status is not being updated'
 @then('sensors will process the data')
 def step_check_if_sensors_process_data(context):
     assert any(context.topic_data.values()), "No risk data found in sensor topics."

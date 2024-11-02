@@ -1,6 +1,6 @@
 Feature: Check for bsn features
 
-	Scenario: BSN-P12 If the BodyHub has processed data, it will eventually detect the patient’s new health status.
+	Scenario: BSN-P12 If the BodyHub has processed data, it will eventually detect the patient's new health status.
 		Given the Target System Data topic is online
 		When I listen to topics:
 			| Topic Name         |
@@ -8,7 +8,7 @@ Feature: Check for bsn features
 			|  ecg data          |
 			|  Target System Data  |
 		Then sensors will process the risks
-		And Target System Data will receive the risks from sensors
+		And Target System Data will receive the risks from sensors and detect patient's status
 
 	Scenario: BSN-P09 If data has been sent by the sensor node, the BodyHub is able to process it
 		Given the Target System Data topic is online
