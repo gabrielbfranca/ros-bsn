@@ -1,6 +1,6 @@
 Feature: Check for bsn features
 
-	Scenario: BSN-P11 If data has been sent by the sensor node, the BodyHub is able to process it as low, moderate or high risk vital sign data.
+	Scenario: BSN-P12 If the BodyHub has processed data, it will eventually detect the patient’s new health status.
 		Given the Target System Data topic is online
 		When I listen to topics:
 			| Topic Name         |
