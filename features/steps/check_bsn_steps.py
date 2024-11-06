@@ -63,7 +63,10 @@ def step_then_check_target_system_receives_risk(context,topic_name):
         print(f"Target risks: {sensor_data[key]['risk']} Sensor risks: {target_data[value]}")
         elements = count_matching_elements(sensor_data[key]['risk'], target_data[value])
         assert elements > 0, f"Topics {key} and {value} do not have matching risk data."
+        assert target_data['patient_status'], f'patient_status is not being provided'
         assert len(target_data['patient_status']) >= elements, f'patient status is not being updated'
+        assert all((x.replace('.', '', 1).isdigit() and 0 <= float(x) <= 100) 
+                for x in target_data['patient_status']), f'patient status is not processing valid risk.'
 @then('sensors will process the data')
 def step_check_if_sensors_process_data(context):
     assert any(context.topic_data.values()), "No risk data found in sensor topics."
